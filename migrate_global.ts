@@ -13,7 +13,7 @@ let supabaseKey = '';
 
 envContent.split('\n').forEach(line => {
   const [key, ...val] = line.split('=');
-  if (key === 'NEXT_PUBLIC_SUPABASE_URL') supabaseUrl = val.join('=').trim().replace(/['"]/g, '');
+  if (key === 'SUPABASE_URL') supabaseUrl = val.join('=').trim().replace(/['"]/g, '');
   if (key === 'SUPABASE_SERVICE_ROLE_KEY') supabaseKey = val.join('=').trim().replace(/['"]/g, '');
 });
 
