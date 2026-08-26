@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import GlobalExportButton from "@/components/GlobalExportButton";
 import DashboardChart from "@/components/DashboardChart";
 
@@ -153,21 +152,9 @@ export default async function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50/50 p-4 sm:p-8 font-sans">
       <div className="max-w-5xl mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-6 p-6 sm:p-8 rounded-2xl ">
-          <div className="flex items-center gap-4">
-            <img 
-              src="/icon.png" 
-              alt="Pavilion Icon" 
-              width={40} 
-              height={40} 
-              className="object-contain"
-            />
-            <div>
-              <h1 className="text-3xl font-bold text-primary tracking-tight">Kounta</h1>
-            </div>
-          </div>
+        {/* <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-6 p-6 sm:p-8 rounded-2xl ">
 
-        </div>
+        </div> */}
 
         {/* Weekly Summary */}
         <div className="mb-6">
@@ -224,25 +211,6 @@ export default async function AdminPage() {
         </div>
 
         <GlobalExportButton />
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Link href="/fixed-cost-product" className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 group relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-2 h-full bg-primary transform origin-bottom transition-transform duration-300 group-hover:scale-y-110"></div>
-            <h2 className="text-2xl font-bold text-primary mb-2 group-hover:text-primary-hover transition-colors">Fixed Cost Product Ledger </h2>
-            <p className="text-gray-500 font-medium">Manage fixed cost product transactions.</p>
-          </Link>
-          <Link href="/non-fixed-cost-product" className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 group relative overflow-hidden">
-             <div className="absolute top-0 left-0 w-2 h-full bg-brand-blue-100 transform origin-bottom transition-transform duration-300 group-hover:scale-y-110"></div>
-            <h2 className="text-2xl font-bold text-brand-blue-100 mb-2 group-hover:text-primary-hover transition-colors">Non-Fixed Cost Product Ledger </h2>
-            <p className="text-gray-500 font-medium">Manage non-fixed cost product transactions.</p>
-          </Link>
-
-          <Link href="/income-expenses" className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-100 group relative overflow-hidden md:col-span-2">
-             <div className="absolute top-0 left-0 w-2 h-full bg-purple-500 transform origin-bottom transition-transform duration-300 group-hover:scale-y-110"></div>
-            <h2 className="text-2xl font-bold text-purple-500 mb-2 group-hover:text-purple-600 transition-colors">Additional Income & Expenses </h2>
-            <p className="text-gray-500 font-medium">Manage company-wide additional income and expenses.</p>
-          </Link>
-        </div>
       </div>
     </div>
   );
