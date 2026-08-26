@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-blue-100: #0098DA;
+  --color-brand-blue-200: #3E4095;
+  --color-brand-blue-300: #14142F;
+  --color-brand-blue-400: #1F2168;
+  --color-brand-yellow: #FFCC29;
+  --color-brand-pink: #ED3883;
+  
+  --color-primary: var(--color-brand-blue-200);
+  --color-primary-hover: var(--color-brand-blue-300);
+  --color-accent: var(--color-brand-pink);
+}
+
+@layer base {
+  body {
+    background-color: #f8fafc;
+  }
+}
