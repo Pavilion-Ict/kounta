@@ -205,12 +205,12 @@ export default async function AdminPage() {
             </div>
           </div>
         </div>
+        <GlobalExportButton />
 
         <div className="mb-6 h-[400px]">
           <DashboardChart data={summary.chartData} />
         </div>
 
-        <GlobalExportButton />
       </div>
     </div>
   );
