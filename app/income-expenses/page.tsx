@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { cookies } from "next/headers";
+import { createClient } from "@/utils/supabase/server";
 
 export const dynamic = 'force-dynamic';
 
@@ -7,23 +8,42 @@ import Link from "next/link";
 import IncomeExpenseLedger from "@/components/IncomeExpenseLedger";
 
 export default async function IncomeExpensePage() {
+  const supabase = await createClient();
+  const cookieStore = await cookies();
 
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
 
-  // Fetch Expenses
-  const { data: expenseEntries, error: expenseError } = await supabase
-    .from("company_expenses")
-    .select("*")
-    .order("created_at", { ascending: false });
+  let orgId = cookieStore.get('current_org_id')?.value;
+  if (!orgId) {
+    const { data: membership } = await supabase
+      .from('memberships')
+      .select('organization_id')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .limit(1)
+      .single();
+    if (!membership) redirect('/onboarding');
+    orgId = membership.organization_id;
+  }
+  if (!orgId) redirect('/onboarding');
 
-  if (expenseError) console.error("Error fetching expenses:", expenseError);
+  // Fetch Expenses and Income in parallel!
+  const [expenseRes, incomeRes] = await Promise.all([
+    supabase
+      .from("company_expenses")
+      .select("*")
+      .eq('organization_id', orgId)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("company_income")
+      .select("*")
+      .eq('organization_id', orgId)
+      .order("created_at", { ascending: false })
+  ]);
 
-  // Fetch Income
-  const { data: incomeEntries, error: incomeError } = await supabase
-    .from("company_income")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (incomeError) console.error("Error fetching income:", incomeError);
+  if (expenseRes.error) console.error("Error fetching expenses:", expenseRes.error);
+  if (incomeRes.error) console.error("Error fetching income:", incomeRes.error);
 
   return (
     <div className="min-h-screen bg-gray-50/50 p-4 sm:p-8 font-sans">
@@ -38,12 +58,11 @@ export default async function IncomeExpensePage() {
               <p className="text-gray-500 mt-1 font-medium">Manage all company-wide expenses and other income sources.</p>
             </div>
           </div>
-
         </div>
 
         <IncomeExpenseLedger 
-          initialExpenses={expenseEntries || []}
-          initialIncome={incomeEntries || []}
+          initialExpenses={expenseRes.data || []}
+          initialIncome={incomeRes.data || []}
         />
       </div>
     </div>

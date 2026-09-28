@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { OrganizationProvider } from "@/components/providers/OrganizationProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,10 +34,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex bg-gray-50/50">
-        <Sidebar />
-        <main className="flex-1 overflow-x-hidden min-h-screen">
-          {children}
-        </main>
+        <OrganizationProvider>
+          <Sidebar />
+          <main className="flex-1 overflow-x-hidden min-h-screen">
+            {children}
+          </main>
+        </OrganizationProvider>
       </body>
     </html>
   );
