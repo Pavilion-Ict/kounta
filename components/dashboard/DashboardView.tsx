@@ -273,9 +273,9 @@ export default function DashboardView({ data }: { data: DashboardData }) {
                     />
                     <Tooltip
                       cursor={{ fill: "#f8fafc" }}
-                      formatter={(value: number, name: string) => [
-                        formatCurrency(value),
-                        name,
+                      formatter={(value: any, name: any) => [
+                        formatCurrency(Number(value) || 0),
+                        String(name),
                       ]}
                       contentStyle={{
                         borderRadius: 12,

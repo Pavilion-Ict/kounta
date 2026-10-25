@@ -1,11 +1,19 @@
 "use server";
 
-
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 
-export async function addExpense(data: any, path: string) {
+async function getOrgId(): Promise<string> {
+  const cookieStore = await cookies();
+  const orgId = cookieStore.get('current_org_id')?.value;
+  if (!orgId) throw new Error("No organization selected");
+  return orgId;
+}
 
+export async function addExpense(data: any, path: string) {
+  const supabase = await createClient();
+  const orgId = await getOrgId();
 
   const { error } = await supabase
     .from('company_expenses')
@@ -14,6 +22,7 @@ export async function addExpense(data: any, path: string) {
       category: data.category,
       description: data.description,
       amount: data.amount,
+      organization_id: orgId,
     }]);
 
   if (error) {
@@ -25,15 +34,22 @@ export async function addExpense(data: any, path: string) {
 }
 
 export async function deleteExpense(id: string, path: string) {
+  const supabase = await createClient();
+  const orgId = await getOrgId();
 
+  const { error } = await supabase
+    .from('company_expenses')
+    .delete()
+    .eq('id', id)
+    .eq('organization_id', orgId);
 
-  const { error } = await supabase.from('company_expenses').delete().eq('id', id);
   if (error) throw new Error("Failed to delete expense");
   revalidatePath(path);
 }
 
 export async function addIncome(data: any, path: string) {
-
+  const supabase = await createClient();
+  const orgId = await getOrgId();
 
   const { error } = await supabase
     .from('company_income')
@@ -42,6 +58,7 @@ export async function addIncome(data: any, path: string) {
       source: data.source,
       description: data.description,
       amount: data.amount,
+      organization_id: orgId,
     }]);
 
   if (error) {
@@ -53,9 +70,15 @@ export async function addIncome(data: any, path: string) {
 }
 
 export async function deleteIncome(id: string, path: string) {
+  const supabase = await createClient();
+  const orgId = await getOrgId();
 
+  const { error } = await supabase
+    .from('company_income')
+    .delete()
+    .eq('id', id)
+    .eq('organization_id', orgId);
 
-  const { error } = await supabase.from('company_income').delete().eq('id', id);
   if (error) throw new Error("Failed to delete income");
   revalidatePath(path);
 }

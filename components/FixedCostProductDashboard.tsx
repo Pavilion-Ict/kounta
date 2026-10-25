@@ -5,6 +5,10 @@ import SummaryPanel from "./SummaryPanel";
 import { generateReceipt, exportPublishingPDF } from "@/lib/pdfUtils";
 import { updateCatalogue, saveStockLog, verifyCopPin, deleteCatalogueItem } from "@/app/actions/fixed-cost-product";
 import { addLedgerEntry, updateLedgerEntry, deleteLedgerEntry } from "@/app/actions/ledger";
+import { useOrganization } from "@/components/providers/OrganizationProvider";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { formatCurrency } from "@/lib/format";
+import { BarChart3, Download, Search, ChevronLeft, ChevronRight, Calendar, X, Package, Settings, FileText, Trash2, Receipt } from "lucide-react";
 
 const getLocalDate = () => {
   const d = new Date();
@@ -22,6 +26,7 @@ export default function FixedCostProductDashboard({
 }: any) {
   const [catalogue, setCatalogue] = useState<any>(initialCatalogue);
   const [stockLogs, setStockLogs] = useState<any[]>(initialStockLogs);
+  const { currentOrg } = useOrganization();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState(getLocalDate());
@@ -142,18 +147,17 @@ export default function FixedCostProductDashboard({
       cop += unitCop * (Number(r.qty) || 0);
     });
 
-
     return { revenue, cop, exp: inlineExp, inc: 0 };
   }, [filteredEntries, catalogue]);
 
   const grossProfit = totals.revenue - totals.cop;
-  // Net profit handled globally
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      if (!currentOrg) throw new Error("No organization selected");
       await addLedgerEntry("publishing_ledger", {
         entryDate,
         clientName,
@@ -165,8 +169,8 @@ export default function FixedCostProductDashboard({
         paymentMethod,
         deliveryMethod,
         note,
-      });
-      // Reset form
+      }, currentOrg.id);
+      
       setEntryDate(new Date().toISOString().split('T')[0]);
       setClientName("");
       setQty("1");
@@ -187,12 +191,13 @@ export default function FixedCostProductDashboard({
     e.preventDefault();
     setStockLoading(true);
     try {
+      if (!currentOrg) throw new Error("No organization selected");
       await saveStockLog({
         date: stockDate,
         opening_stock: openingStock,
         additional_notes: stockNote,
         closing_stock: closingStock
-      });
+      }, currentOrg.id);
       alert("Stock log saved successfully!");
       setOpeningStock("");
       setStockNote("");
@@ -220,7 +225,8 @@ export default function FixedCostProductDashboard({
     if (!catName || !catCop) return;
     setCatLoading(true);
     try {
-      await updateCatalogue([{ service_name: catName, cop_rate: parseFloat(catCop) }]);
+      if (!currentOrg) throw new Error("No organization selected");
+      await updateCatalogue([{ service_name: catName, cop_rate: parseFloat(catCop) }], currentOrg.id);
       setCatalogue((prev: any) => ({ ...prev, [catName]: { cop: parseFloat(catCop) } }));
       setCatName("");
       setCatCop("");
@@ -235,7 +241,8 @@ export default function FixedCostProductDashboard({
   const handleCatalogueDelete = async (name: string) => {
     if (!confirm(`Are you sure you want to delete ${name} from the catalogue?`)) return;
     try {
-      await deleteCatalogueItem(name);
+      if (!currentOrg) throw new Error("No organization selected");
+      await deleteCatalogueItem(name, currentOrg.id);
       setCatalogue((prev: any) => {
         const next = { ...prev };
         delete next[name];
@@ -245,6 +252,10 @@ export default function FixedCostProductDashboard({
       alert("Failed to delete catalogue item");
     }
   };
+
+  const inputClass = "block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors";
+  const selectClass = "block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors appearance-none";
+  const labelClass = "block text-xs font-medium text-gray-500 mb-1.5";
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 relative">
@@ -267,8 +278,8 @@ export default function FixedCostProductDashboard({
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6 text-center">
-              <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-                🗑️
+              <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Entry?</h3>
               <p className="text-sm text-gray-500 mb-6">
@@ -289,7 +300,8 @@ export default function FixedCostProductDashboard({
                   onClick={async () => {
                     setIsDeleting(true);
                     try {
-                      if (entryToDelete) await deleteLedgerEntry("publishing_ledger", entryToDelete);
+                      if (!currentOrg) throw new Error("No organization selected");
+                      if (entryToDelete) await deleteLedgerEntry("publishing_ledger", entryToDelete, currentOrg.id);
                       setEntryToDelete(null);
                         } catch (e) {
                       alert("Failed to delete entry");
@@ -308,7 +320,7 @@ export default function FixedCostProductDashboard({
       )}
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">{title} Dashboard</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-gray-900">{title}</h1>
         <div className="flex flex-wrap items-center gap-3">
           
           <div className="flex items-center bg-white border border-gray-200 rounded-xl shadow-sm h-full min-h-[44px] overflow-hidden">
@@ -318,10 +330,10 @@ export default function FixedCostProductDashboard({
               className="px-3 sm:px-4 py-2 hover:bg-gray-50 border-r border-gray-200 text-gray-500 disabled:opacity-30 disabled:hover:bg-white transition-colors"
               title="Previous Day"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+              <ChevronLeft className="w-4 h-4" />
             </button>
             <div className="flex items-center px-3 gap-2">
-              <svg className="w-5 h-5 text-gray-400 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              <Calendar className="w-4 h-4 text-gray-400 hidden sm:block" />
               
               {dateFilter !== todayStr && (
                 <button 
@@ -344,7 +356,7 @@ export default function FixedCostProductDashboard({
                   className="text-gray-400 hover:text-red-500 font-bold px-1 text-lg leading-none transition-colors"
                   title="View All Dates"
                 >
-                  ×
+                  <X className="w-4 h-4" />
                 </button>
               )}
             </div>
@@ -354,43 +366,29 @@ export default function FixedCostProductDashboard({
               className="px-3 sm:px-4 py-2 hover:bg-gray-50 border-l border-gray-200 text-gray-500 disabled:opacity-30 disabled:hover:bg-white transition-colors"
               title="Next Day"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
           <button onClick={() => setShowSummary(true)} className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl text-sm font-bold shadow-sm hover:bg-gray-50 flex items-center gap-2 h-full min-h-[44px] transition-colors">
-            <span>📊</span> Summary
+            <BarChart3 className="w-4 h-4" /> Summary
           </button>
           <button onClick={() => exportPublishingPDF({
             filteredRows: filteredEntries, catalogue, title,
             totalRevenue: totals.revenue, totalCop: totals.cop, totalExpenses: totals.exp, stockLogs: filteredStockLogs,
             filterDate: searchQuery || paymentFilter !== "all" || deliveryFilter !== "all" || dateFilter ? "Filtered" : ""
           })} className="px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold shadow-sm hover:bg-primary-hover flex items-center gap-2 h-full min-h-[44px]">
-            <span>⬇</span> Export PDF
+            <Download className="w-4 h-4" /> Export PDF
           </button>
         </div>
       </div>
       
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-        <div className="bg-white border-l-4 border-primary p-5 rounded-2xl shadow-sm flex flex-col justify-center">
-          <h3 className="text-gray-500 font-bold text-xs tracking-wider uppercase mb-1">Revenue</h3>
-          <p className="text-2xl font-bold text-gray-900">₦{totals.revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-        </div>
-        <div className="bg-white border-l-4 border-brand-yellow p-5 rounded-2xl shadow-sm flex flex-col justify-center">
-          <h3 className="text-gray-500 font-bold text-xs tracking-wider uppercase mb-1">Total COP</h3>
-          <p className="text-2xl font-bold text-brand-yellow">₦{totals.cop.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-        </div>
-        <div className={`bg-white border-l-4 ${grossProfit >= 0 ? 'border-green-500' : 'border-red-500'} p-5 rounded-2xl shadow-sm flex flex-col justify-center`}>
-          <h3 className="text-gray-500 font-bold text-xs tracking-wider uppercase mb-1">Gross Profit</h3>
-          <p className={`text-2xl font-bold ${grossProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            ₦{grossProfit.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-          </p>
-        </div>
-        <div className="bg-white border-l-4 border-gray-300 p-5 rounded-2xl shadow-sm flex flex-col justify-center">
-          <h3 className="text-gray-500 font-bold text-xs tracking-wider uppercase mb-1">Entries</h3>
-          <p className="text-2xl font-bold text-gray-600">{filteredEntries.length}</p>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <StatCard label="Revenue" value={formatCurrency(totals.revenue)} />
+        <StatCard label="Cost of production" value={formatCurrency(totals.cop)} />
+        <StatCard label="Gross profit" value={formatCurrency(grossProfit)} />
+        <StatCard label="Entries" value={String(filteredEntries.length)} deltaLabel="today" />
       </div>
 
       {/* Forms Section */}
@@ -398,16 +396,21 @@ export default function FixedCostProductDashboard({
         {/* Ledger Entry Form (Spans 2 columns) */}
         <div className="xl:col-span-2">
           <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Add Sales Record</h3>
+            <h3 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <FileText className="w-3.5 h-3.5 text-emerald-600" />
+              </span>
+              Add sales record
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                <input type="date" required className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-gray-900" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} />
+                <label className={labelClass}>Date</label>
+                <input type="date" required className={inputClass} value={entryDate} onChange={(e) => setEntryDate(e.target.value)} />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
-                <input type="text" required list="publishing-clients" className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-gray-900" value={clientName} onChange={(e) => setClientName(e.target.value)} />
+                <label className={labelClass}>Client Name</label>
+                <input type="text" required list="publishing-clients" className={inputClass} value={clientName} onChange={(e) => setClientName(e.target.value)} />
                 <datalist id="publishing-clients">
                   {uniqueClientNames.map((name) => (
                     <option key={name} value={name} />
@@ -416,57 +419,59 @@ export default function FixedCostProductDashboard({
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
-                <select className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-gray-900" value={service} onChange={(e) => setService(e.target.value)}>
+                <label className={labelClass}>Service</label>
+                <select className={selectClass} value={service} onChange={(e) => setService(e.target.value)}>
                   {Object.keys(catalogue).map((s) => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:col-span-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Qty</label>
-                  <input type="number" min="1" required className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-gray-900" value={qty} onChange={(e) => setQty(e.target.value)} />
+                  <label className={labelClass}>Qty</label>
+                  <input type="number" min="1" required className={inputClass} value={qty} onChange={(e) => setQty(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (₦)</label>
-                  <input type="number" step="0.01" min="0" required className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-gray-900" value={price} onChange={(e) => setPrice(e.target.value)} />
+                  <label className={labelClass}>Price (₦)</label>
+                  <input type="number" step="0.01" min="0" required className={inputClass} value={price} onChange={(e) => setPrice(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">COP Rate / Total</label>
-                  <div className="block w-full px-3 py-2 border border-gray-200 bg-gray-50 rounded-lg text-brand-yellow font-bold text-sm">
-                    {catalogue[service]?.cop || 0} / ₦{(catalogue[service]?.cop || 0) * (Number(qty) || 0)}
+                  <label className={labelClass}>COP rate / total</label>
+                  <div className="flex items-center gap-2 rounded-lg border border-dashed border-gray-200 bg-gray-50/80 px-3 py-2 text-sm">
+                    <span className="text-gray-500 tabular-nums">₦{catalogue[service]?.cop || 0}</span>
+                    <span className="text-gray-300">/</span>
+                    <span className="font-semibold text-gray-900 tabular-nums">{formatCurrency((catalogue[service]?.cop || 0) * (Number(qty) || 0))}</span>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:col-span-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Balance</label>
-                  <input type="number" step="0.01" min="0" required className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-gray-900" value={balance} onChange={(e) => setBalance(e.target.value)} />
+                  <label className={labelClass}>Balance</label>
+                  <input type="number" step="0.01" min="0" required className={inputClass} value={balance} onChange={(e) => setBalance(e.target.value)} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Entry Expenses (₦)</label>
-                  <input type="number" step="0.01" min="0" required className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-gray-900" value={expenses} onChange={(e) => setExpenses(e.target.value)} />
+                  <label className={labelClass}>Entry Expenses (₦)</label>
+                  <input type="number" step="0.01" min="0" required className={inputClass} value={expenses} onChange={(e) => setExpenses(e.target.value)} />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
-                <select className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-gray-900" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                <label className={labelClass}>Payment Method</label>
+                <select className={selectClass} value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                   {["Transfer", "Cash", "POS", "Cheque", "Credit"].map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Method</label>
-                <select className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-gray-900" value={deliveryMethod} onChange={(e) => setDeliveryMethod(e.target.value)}>
+                <label className={labelClass}>Delivery Method</label>
+                <select className={selectClass} value={deliveryMethod} onChange={(e) => setDeliveryMethod(e.target.value)}>
                   {["Pick Up", "Dispatch", "Express Delivery", "Evening Delivery", "Walk-In"].map(o => <option key={o} value={o}>{o}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Note (Optional)</label>
-                <input type="text" className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-gray-900" value={note} onChange={(e) => setNote(e.target.value)} />
+                <label className={labelClass}>Note (Optional)</label>
+                <input type="text" className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} />
               </div>
             </div>
             <div className="flex justify-end pt-2 border-t border-gray-100 mt-2">
@@ -480,23 +485,28 @@ export default function FixedCostProductDashboard({
         {/* Side Forms: Stock & Catalogue */}
         <div className="flex flex-col gap-6">
           <form onSubmit={handleStockSubmit} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-md font-semibold text-gray-800 mb-3 border-b border-gray-100 pb-2">📦 Daily Stock Log</h3>
+            <h3 className="text-md font-semibold text-gray-800 mb-3 border-b border-gray-100 pb-2 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-indigo-50 flex items-center justify-center">
+                <Package className="w-3.5 h-3.5 text-indigo-600" />
+              </span>
+              Daily stock log
+            </h3>
             <div className="flex flex-col gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Date</label>
-                <input type="date" required className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-gray-900" value={stockDate} onChange={(e) => setStockDate(e.target.value)} />
+                <label className={labelClass}>Date</label>
+                <input type="date" required className={inputClass} value={stockDate} onChange={(e) => setStockDate(e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Opening Stock</label>
-                <textarea rows={2} className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-gray-900" value={openingStock} onChange={(e) => setOpeningStock(e.target.value)} />
+                <label className={labelClass}>Opening Stock</label>
+                <input type="number" min="0" step="1" className={inputClass} value={openingStock} onChange={(e) => setOpeningStock(e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Additional Notes</label>
-                <textarea rows={2} className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-gray-900" value={stockNote} onChange={(e) => setStockNote(e.target.value)} />
+                <label className={labelClass}>Additional Notes</label>
+                <input type="text" className={inputClass} value={stockNote} onChange={(e) => setStockNote(e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Closing Stock</label>
-                <textarea rows={2} className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-gray-900" value={closingStock} onChange={(e) => setClosingStock(e.target.value)} />
+                <label className={labelClass}>Closing Stock</label>
+                <input type="number" min="0" step="1" className={inputClass} value={closingStock} onChange={(e) => setClosingStock(e.target.value)} />
               </div>
               <button type="submit" disabled={stockLoading} className="w-full py-2 mt-1 bg-gray-100 text-gray-800 font-bold text-sm rounded-lg hover:bg-gray-200">
                 {stockLoading ? "Saving..." : "Save Stock"}
@@ -505,12 +515,17 @@ export default function FixedCostProductDashboard({
           </form>
 
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-md font-semibold text-gray-800 mb-3 border-b border-gray-100 pb-2">⚙️ Update Catalogue</h3>
+            <h3 className="text-md font-semibold text-gray-800 mb-3 border-b border-gray-100 pb-2 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center">
+                <Settings className="w-3.5 h-3.5 text-amber-600" />
+              </span>
+              Update catalogue
+            </h3>
             {!catUnlocked ? (
               <form onSubmit={unlockCatalogue} className="flex flex-col gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Enter Admin PIN</label>
-                  <input type="password" placeholder="••••" required className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-center font-mono tracking-[0.5em]" value={catPin} onChange={(e) => { setCatPin(e.target.value); setCatError(""); }} />
+                  <label className={labelClass}>Enter Admin PIN</label>
+                  <input type="password" placeholder="••••" required className={`${inputClass} text-center font-mono tracking-[0.5em]`} value={catPin} onChange={(e) => { setCatPin(e.target.value); setCatError(""); }} />
                   {catError && <p className="text-red-500 text-xs mt-1">{catError}</p>}
                 </div>
                 <button type="submit" className="w-full py-2 bg-gray-100 text-gray-800 font-bold text-sm rounded-lg hover:bg-gray-200">Unlock</button>
@@ -519,12 +534,12 @@ export default function FixedCostProductDashboard({
               <>
                 <form onSubmit={handleCatalogueSubmit} className="flex flex-col gap-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Service Name</label>
-                    <input type="text" placeholder="e.g. Printing" required className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-900" value={catName} onChange={(e) => setCatName(e.target.value)} />
+                    <label className={labelClass}>Service Name</label>
+                    <input type="text" placeholder="e.g. Printing" required className={inputClass} value={catName} onChange={(e) => setCatName(e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Unit COP (₦)</label>
-                    <input type="number" step="0.01" min="0" required className="block w-full px-3 py-2 text-sm border border-gray-300 rounded-lg text-gray-900" value={catCop} onChange={(e) => setCatCop(e.target.value)} />
+                    <label className={labelClass}>Unit COP (₦)</label>
+                    <input type="number" step="0.01" min="0" required className={inputClass} value={catCop} onChange={(e) => setCatCop(e.target.value)} />
                   </div>
                   <button type="submit" disabled={catLoading} className="w-full py-2 mt-1 bg-brand-yellow text-yellow-900 font-bold text-sm rounded-lg hover:brightness-95">
                     {catLoading ? "Saving..." : "Add / Update"}
@@ -561,16 +576,16 @@ export default function FixedCostProductDashboard({
       {/* Filters & Search */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between">
         <div className="w-full md:w-1/3 relative">
-          <svg className="w-5 h-5 absolute left-3 top-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-          <input type="text" placeholder="Search all fields..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm text-gray-900" />
+          <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+          <input type="text" placeholder="Search all fields..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className={`${inputClass} !pl-10`} />
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-          <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary text-gray-700 bg-gray-50">
+          <select value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} className={selectClass}>
             <option value="all">All Payments</option>
             {["Transfer", "Cash", "POS", "Cheque", "Credit"].map(o => <option key={o} value={o}>{o}</option>)}
           </select>
-          <select value={deliveryFilter} onChange={(e) => setDeliveryFilter(e.target.value)} className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary text-gray-700 bg-gray-50">
+          <select value={deliveryFilter} onChange={(e) => setDeliveryFilter(e.target.value)} className={selectClass}>
             <option value="all">All Deliveries</option>
             {["Pick Up", "Dispatch", "Express Delivery", "Evening Delivery", "Walk-In"].map(o => <option key={o} value={o}>{o}</option>)}
           </select>
@@ -579,15 +594,14 @@ export default function FixedCostProductDashboard({
 
       {/* Sales Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-        <div className="bg-gray-50 px-6 py-3 border-b border-gray-100 flex justify-between items-center">
-          <h3 className="font-bold text-gray-700 uppercase tracking-wider text-xs">Fixed Cost Product Records</h3>
+        <div className="bg-gray-50 px-4 py-3.5 border-b border-gray-100 flex justify-between items-center">
+          <h3 className="font-bold text-gray-700 text-xs">Sales records</h3>
           {selectedEntries.size > 0 && (
             <button onClick={() => {
               const rowsToPrint = filteredEntries.filter((e: any) => selectedEntries.has(e.id));
-              // We'll update pdfUtils to export a multi-receipt shortly
               generateReceipt(rowsToPrint, title, true); 
-            }} className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold shadow-sm hover:bg-primary-hover">
-              🧾 Generate Receipt ({selectedEntries.size})
+            }} className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold shadow-sm hover:bg-primary-hover flex items-center gap-1.5">
+              <Receipt className="w-3.5 h-3.5" /> Generate Receipt ({selectedEntries.size})
             </button>
           )}
         </div>
@@ -595,24 +609,24 @@ export default function FixedCostProductDashboard({
           <table className="min-w-full divide-y divide-gray-200 text-gray-900">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-4">
+                <th className="px-4 py-3.5">
                   <input type="checkbox" onChange={(e) => {
                     if (e.target.checked) setSelectedEntries(new Set(filteredEntries.map((e: any) => e.id)));
                     else setSelectedEntries(new Set());
                   }} checked={selectedEntries.size === filteredEntries.length && filteredEntries.length > 0} className="rounded text-primary focus:ring-primary" />
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Client Name</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Service</th>
-                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Qty</th>
-                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Price</th>
-                <th className="px-6 py-4 text-right text-xs font-bold text-brand-yellow uppercase tracking-wider">COP</th>
-                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Payment</th>
-                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Delivery</th>
-                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Balance</th>
-                <th className="px-6 py-4 text-right text-xs font-bold text-orange-500 uppercase tracking-wider">Expenses</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Note</th>
-                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-4 py-3.5 text-left text-xs font-medium text-gray-500">Date</th>
+                <th className="px-4 py-3.5 text-left text-xs font-medium text-gray-500">Client Name</th>
+                <th className="px-4 py-3.5 text-left text-xs font-medium text-gray-500">Service</th>
+                <th className="px-4 py-3.5 text-right text-xs font-medium text-gray-500">Qty</th>
+                <th className="px-4 py-3.5 text-right text-xs font-medium text-gray-500">Price</th>
+                <th className="px-4 py-3.5 text-right text-xs font-medium text-gray-500">COP</th>
+                <th className="px-4 py-3.5 text-center text-xs font-medium text-gray-500">Payment</th>
+                <th className="px-4 py-3.5 text-center text-xs font-medium text-gray-500">Delivery</th>
+                <th className="px-4 py-3.5 text-right text-xs font-medium text-gray-500">Balance</th>
+                <th className="px-4 py-3.5 text-right text-xs font-medium text-gray-500">Expenses</th>
+                <th className="px-4 py-3.5 text-left text-xs font-medium text-gray-500">Note</th>
+                <th className="px-4 py-3.5 text-center text-xs font-medium text-gray-500">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -622,46 +636,43 @@ export default function FixedCostProductDashboard({
                   const totalCop = unitCop * (Number(entry.qty) || 0);
 
                   return (
-                    <tr key={entry.id} className={`hover:bg-gray-50 transition-colors ${selectedEntries.has(entry.id) ? 'bg-blue-50/50' : ''}`}>
-                      <td className="px-6 py-4">
+                    <tr key={entry.id} className={`group hover:bg-gray-50 transition-colors ${selectedEntries.has(entry.id) ? 'bg-blue-50/50' : ''}`}>
+                      <td className="px-4 py-3.5">
                         <input type="checkbox" checked={selectedEntries.has(entry.id)} onChange={() => toggleSelection(entry.id)} className="rounded text-primary focus:ring-primary" />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500">
                         <span className="font-bold text-gray-900 block">
                           {entry.entry_date ? new Date(entry.entry_date).toLocaleDateString() : new Date(entry.created_at).toLocaleDateString()}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{entry.client_name}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600 max-w-[150px] truncate">{entry.description}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">{entry.qty}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-gray-900">₦{Number(entry.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-brand-yellow">₦{totalCop.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                      <td className="px-4 py-3.5 text-sm font-medium text-gray-900">{entry.client_name}</td>
+                      <td className="px-4 py-3.5 text-sm text-gray-600 max-w-[150px] truncate">{entry.description}</td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-right text-gray-900">{entry.qty}</td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-right font-bold text-gray-900 tabular-nums">{formatCurrency(Number(entry.price))}</td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-right font-bold text-gray-900 tabular-nums">{formatCurrency(totalCop)}</td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-center">
                         <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full 
                           ${entry.payment_method === 'Credit' ? 'bg-[#FFF9E5] text-[#FFCC29]' : 
                             entry.payment_method === 'Cash' ? 'bg-[#E5F5FC] text-[#0098DA]' : 
                             entry.payment_method === 'POS' ? 'bg-[#EAEAF4] text-[#3E4095]' : 
                             entry.payment_method === 'Transfer' ? 'bg-green-100 text-green-700' : 
                             'bg-[#FDEBF2] text-[#ED3883]'}`}>
-                          {entry.payment_method.toUpperCase()}
+                          {entry.payment_method}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center" style={{textTransform: 'capitalize'}}>{entry.delivery_method}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-gray-900">₦{Number(entry.balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-orange-500">₦{Number(entry.expenses || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                      <td className="px-6 py-4 text-sm text-gray-500 max-w-[150px] truncate" title={entry.note}>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-center" style={{textTransform: 'capitalize'}}>{entry.delivery_method}</td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-right text-gray-900 tabular-nums">{formatCurrency(Number(entry.balance || 0))}</td>
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm text-right font-bold text-gray-900 tabular-nums">{formatCurrency(Number(entry.expenses || 0))}</td>
+                      <td className="px-4 py-3.5 text-sm text-gray-500 max-w-[150px] truncate" title={entry.note}>
                         {entry.note || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                        <div className="flex justify-center gap-2">
-                          <button onClick={() => generateReceipt(entry, title)} className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-xs font-bold shadow-sm hover:bg-gray-200">
-                            🧾 Receipt
+                      <td className="px-4 py-3.5 whitespace-nowrap text-sm">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => generateReceipt(entry, title)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors" title="Generate receipt">
+                            <Receipt className="w-4 h-4" />
                           </button>
-                          <button 
-                            onClick={() => setEntryToDelete(entry.id)} 
-                            className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold shadow-sm hover:bg-red-100"
-                          >
-                            🗑️ Delete
+                          <button onClick={() => setEntryToDelete(entry.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Delete entry">
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -670,8 +681,12 @@ export default function FixedCostProductDashboard({
                 })
               ) : (
                 <tr>
-                  <td colSpan={10} className="px-6 py-8 text-center text-sm text-gray-500">
-                    No matching records found.
+                  <td colSpan={13} className="px-4 py-12 text-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <FileText className="w-8 h-8 text-gray-300" />
+                      <p className="text-sm font-medium text-gray-500">No records found</p>
+                      <p className="text-xs text-gray-400">Try adjusting your filters or add a new entry above</p>
+                    </div>
                   </td>
                 </tr>
               )}

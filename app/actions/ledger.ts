@@ -1,12 +1,10 @@
 "use server";
-
-
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
 // ── SALES LEDGER ACTIONS ──────────────────────────────────────────────────────
-export async function addLedgerEntry(tableName: string, data: any) {
-
+export async function addLedgerEntry(tableName: string, data: any, orgId: string) {
+  const supabase = await createClient();
 
   const mappedData = {
     entry_date: data.entryDate || data.entry_date,
@@ -17,7 +15,7 @@ export async function addLedgerEntry(tableName: string, data: any) {
     balance: data.balance,
     payment_method: data.paymentMethod || data.payment_method,
     delivery_method: data.deliveryMethod || data.delivery_method,
-    
+    organization_id: orgId,
     ...(data.expenses !== undefined && { expenses: data.expenses }),
     ...(data.note !== undefined && { note: data.note }),
   };
@@ -34,8 +32,8 @@ export async function addLedgerEntry(tableName: string, data: any) {
   revalidatePath(`/${tableName.replace('_ledger', '').replace('_', '-')}`);
 }
 
-export async function updateLedgerEntry(tableName: string, id: string, data: any) {
-
+export async function updateLedgerEntry(tableName: string, id: string, data: any, orgId: string) {
+  const supabase = await createClient();
 
   const mappedData = {
     ...(data.entryDate && { entry_date: data.entryDate }),
@@ -53,7 +51,8 @@ export async function updateLedgerEntry(tableName: string, id: string, data: any
   const { error } = await supabase
     .from(tableName)
     .update(mappedData)
-    .eq('id', id);
+    .eq('id', id)
+    .eq('organization_id', orgId);
 
   if (error) {
     console.error("Supabase update error:", error);
@@ -63,13 +62,14 @@ export async function updateLedgerEntry(tableName: string, id: string, data: any
   revalidatePath(`/${tableName.replace('_ledger', '').replace('_', '-')}`);
 }
 
-export async function deleteLedgerEntry(tableName: string, id: string) {
-
+export async function deleteLedgerEntry(tableName: string, id: string, orgId: string) {
+  const supabase = await createClient();
 
   const { error } = await supabase
     .from(tableName)
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('organization_id', orgId);
 
   if (error) {
     console.error("Supabase delete error:", error);
@@ -85,9 +85,8 @@ export async function addCopEntry(tableName: string, data: {
   item: string;
   note: string;
   amount: number;
-}) {
-
-
+}, orgId: string) {
+  const supabase = await createClient();
   const copTableName = tableName.replace('_ledger', '_cop');
 
   const { error } = await supabase
@@ -98,7 +97,7 @@ export async function addCopEntry(tableName: string, data: {
         item: data.item,
         note: data.note,
         amount: data.amount,
-        
+        organization_id: orgId
       }
     ]);
 
@@ -110,15 +109,15 @@ export async function addCopEntry(tableName: string, data: {
   revalidatePath(`/${tableName.replace('_ledger', '').replace('_', '-')}`);
 }
 
-export async function deleteCopEntry(tableName: string, id: string) {
-
-
+export async function deleteCopEntry(tableName: string, id: string, orgId: string) {
+  const supabase = await createClient();
   const copTableName = tableName.replace('_ledger', '_cop');
 
   const { error } = await supabase
     .from(copTableName)
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('organization_id', orgId);
 
   if (error) {
     console.error("Supabase delete COP error:", error);

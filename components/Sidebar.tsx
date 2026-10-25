@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useOrganization } from "@/components/providers/OrganizationProvider";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navItems = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
@@ -221,14 +222,17 @@ export default function Sidebar() {
               </div>
             </div>
 
-            <button
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              title="Sign out"
-              className={`shrink-0 w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors ${isCollapsed ? 'mx-auto' : ''}`}
-            >
-              <LogOut size={16} />
-            </button>
+            <div className={`flex items-center gap-1 ${isCollapsed ? 'flex-col mx-auto' : ''}`}>
+              <ThemeToggle isCollapsed={isCollapsed} />
+              <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                title="Sign out"
+                className={`shrink-0 w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors ${isCollapsed ? 'mx-auto' : ''}`}
+              >
+                <LogOut size={16} />
+              </button>
+            </div>
           </div>
         </div>
       </aside>

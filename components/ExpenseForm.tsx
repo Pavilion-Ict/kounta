@@ -2,9 +2,14 @@
 
 import { useState } from "react";
 import { addExpense } from "@/app/actions/expenses";
+import { ArrowDownCircle } from "lucide-react";
 
 export default function ExpenseForm({ path }: { path: string }) {
   const [loading, setLoading] = useState(false);
+
+  const inputClass = "block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors";
+  const selectClass = "block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors appearance-none";
+  const labelClass = "block text-xs font-medium text-gray-500 mb-1.5";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -23,36 +28,36 @@ export default function ExpenseForm({ path }: { path: string }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-sm border border-orange-100 flex flex-col h-full">
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-orange-50">
-       
-        <h2 className="text-xl font-bold text-gray-800">Add Expense</h2>
+    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 flex flex-col h-full">
+      <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
+        <span className="w-6 h-6 rounded-lg bg-rose-50 flex items-center justify-center"><ArrowDownCircle className="w-3.5 h-3.5 text-rose-600" /></span>
+        <h2 className="text-base font-semibold text-gray-800">Add expense</h2>
       </div>
 
       <div className="space-y-4 flex-grow">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Date</label>
-            <input name="entry_date" type="date" required className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all outline-none" />
+            <label className={labelClass}>Date</label>
+            <input name="entry_date" type="date" required className={inputClass} />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Amount (₦)</label>
-            <input name="amount" type="number" step="0.01" required className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all outline-none" placeholder="e.g. 5000" />
+            <label className={labelClass}>Amount (₦)</label>
+            <input name="amount" type="number" step="0.01" required className={inputClass} placeholder="e.g. 5000" />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Category</label>
-          <input name="category" type="text" className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all outline-none" placeholder="e.g. Utilities, Logistics" />
+          <label className={labelClass}>Category</label>
+          <input name="category" type="text" className={inputClass} placeholder="e.g. Utilities, Logistics" />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Description</label>
-          <input name="description" type="text" required className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all outline-none" placeholder="e.g. Paid for fuel" />
+          <label className={labelClass}>Description</label>
+          <input name="description" type="text" required className={inputClass} placeholder="e.g. Paid for fuel" />
         </div>
       </div>
 
-      <button type="submit" disabled={loading} className="w-full mt-6 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-50">
+      <button type="submit" disabled={loading} className="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm py-2.5 px-4 rounded-lg transition-colors shadow-sm disabled:opacity-50">
         {loading ? "Saving..." : "Save Expense"}
       </button>
     </form>

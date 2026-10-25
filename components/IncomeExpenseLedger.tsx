@@ -4,6 +4,9 @@ import { useState, useMemo } from "react";
 import ExpenseForm from "./ExpenseForm";
 import IncomeForm from "./IncomeForm";
 import { deleteExpense, deleteIncome } from "@/app/actions/expenses";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { formatCurrency } from "@/lib/format";
+import { Trash2, FileText, ArrowDownCircle, ArrowUpCircle, Calendar, X } from "lucide-react";
 
 export default function IncomeExpenseLedger({ 
   initialExpenses = [],
@@ -42,6 +45,7 @@ export default function IncomeExpenseLedger({
   const totalInc = filteredIncome.reduce((sum, e) => sum + Number(e.amount), 0);
   
   const pathName = "/income-expenses";
+  const inputClass = "block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-colors";
 
   return (
     <div className="relative">
@@ -51,8 +55,8 @@ export default function IncomeExpenseLedger({
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="p-6 text-center">
-              <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-                🗑️
+              <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-7 h-7" />
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Entry?</h3>
               <p className="text-sm text-gray-500 mb-6">
@@ -95,15 +99,9 @@ export default function IncomeExpenseLedger({
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <div className="bg-white border-l-4 border-orange-400 p-5 rounded-2xl shadow-sm flex flex-col justify-center">
-          <h3 className="text-gray-500 font-bold text-xs tracking-wider uppercase mb-1">Total Expenses</h3>
-          <p className="text-2xl font-bold text-orange-500">₦{totalExp.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-        </div>
-        <div className="bg-white border-l-4 border-green-500 p-5 rounded-2xl shadow-sm flex flex-col justify-center">
-          <h3 className="text-gray-500 font-bold text-xs tracking-wider uppercase mb-1">Total Income</h3>
-          <p className="text-2xl font-bold text-green-600">₦{totalInc.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
-        </div>
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <StatCard label="Total expenses" value={formatCurrency(totalExp)} />
+        <StatCard label="Total income" value={formatCurrency(totalInc)} />
       </div>
 
       {/* Forms */}
@@ -119,7 +117,7 @@ export default function IncomeExpenseLedger({
             type="date" 
             value={dateFilter} 
             onChange={(e) => setDateFilter(e.target.value)} 
-            className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary text-gray-700 bg-gray-50"
+            className={inputClass}
           />
           {dateFilter && (
             <button onClick={() => setDateFilter("")} className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-sm font-medium transition-colors">
@@ -130,56 +128,58 @@ export default function IncomeExpenseLedger({
       </div>
 
       {/* Expenses Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-orange-200 overflow-hidden mb-8">
-        <div className="bg-orange-50 px-6 py-3 border-b border-orange-200 flex justify-between items-center">
-          <h3 className="font-bold text-orange-800 uppercase tracking-wider text-xs">Expenses</h3>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+        <div className="bg-gray-50 px-6 py-3 border-b border-gray-200 flex justify-between items-center">
+          <h3 className="font-bold text-gray-900 text-xs font-medium">Expenses</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Description</th>
-                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Amount (₦)</th>
-                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-4 py-3.5 text-left text-xs font-medium text-gray-500">Date</th>
+                <th className="px-4 py-3.5 text-left text-xs font-medium text-gray-500">Category</th>
+                <th className="px-4 py-3.5 text-left text-xs font-medium text-gray-500">Description</th>
+                <th className="px-4 py-3.5 text-right text-xs font-medium text-gray-500">Amount</th>
+                <th className="px-4 py-3.5 text-center text-xs font-medium text-gray-500">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredExpenses.length > 0 ? (
                 filteredExpenses.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <tr key={entry.id} className="hover:bg-gray-50 transition-colors group">
+                    <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500">
                       <span className="font-bold text-gray-900 block">
                         {entry.entry_date ? new Date(entry.entry_date).toLocaleDateString() : new Date(entry.created_at).toLocaleDateString()}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{entry.category || "—"}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{entry.description}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-orange-500">
-                      ₦{Number(entry.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    <td className="px-4 py-3.5 text-sm font-medium text-gray-900">{entry.category || "—"}</td>
+                    <td className="px-4 py-3.5 text-sm text-gray-600">{entry.description}</td>
+                    <td className="px-4 py-3.5 whitespace-nowrap text-sm text-right font-bold text-gray-900 tabular-nums">
+                      {formatCurrency(Number(entry.amount))}
                     </td>
-                
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                      <button onClick={() => setExpenseToDelete(entry.id)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold shadow-sm hover:bg-red-100">
-                        🗑️ Delete
+                    <td className="px-4 py-3.5 whitespace-nowrap text-sm text-center">
+                      <button onClick={() => setExpenseToDelete(entry.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100">
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
-                    No expenses recorded.
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-500">
+                    <div className="flex flex-col items-center justify-center text-gray-400">
+                      <FileText className="w-8 h-8 mb-2 opacity-50" />
+                      <p>No expenses recorded.</p>
+                    </div>
                   </td>
                 </tr>
               )}
             </tbody>
             <tfoot>
               <tr className="bg-gray-50 border-t-2 border-gray-200">
-                <td colSpan={3} className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Total Expenses</td>
-                <td className="px-6 py-4 text-right font-bold text-orange-500 text-lg">₦{totalExp.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                <td colSpan={2}></td>
+                <td colSpan={3} className="px-4 py-3.5 text-right text-xs font-medium text-gray-500">Total Expenses</td>
+                <td className="px-4 py-3.5 text-right font-bold text-gray-900 text-lg tabular-nums">{formatCurrency(totalExp)}</td>
+                <td></td>
               </tr>
             </tfoot>
           </table>
@@ -187,56 +187,58 @@ export default function IncomeExpenseLedger({
       </div>
 
       {/* Income Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-green-200 overflow-hidden mb-8">
-        <div className="bg-green-50 px-6 py-3 border-b border-green-200 flex justify-between items-center">
-          <h3 className="font-bold text-green-800 uppercase tracking-wider text-xs">Other Income</h3>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+        <div className="bg-gray-50 px-6 py-3 border-b border-gray-200 flex justify-between items-center">
+          <h3 className="font-bold text-gray-900 text-xs font-medium">Other income</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Source</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Description</th>
-                <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Amount (₦)</th>
-                <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-4 py-3.5 text-left text-xs font-medium text-gray-500">Date</th>
+                <th className="px-4 py-3.5 text-left text-xs font-medium text-gray-500">Source</th>
+                <th className="px-4 py-3.5 text-left text-xs font-medium text-gray-500">Description</th>
+                <th className="px-4 py-3.5 text-right text-xs font-medium text-gray-500">Amount</th>
+                <th className="px-4 py-3.5 text-center text-xs font-medium text-gray-500">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredIncome.length > 0 ? (
                 filteredIncome.map((entry) => (
-                  <tr key={entry.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <tr key={entry.id} className="hover:bg-gray-50 transition-colors group">
+                    <td className="px-4 py-3.5 whitespace-nowrap text-sm text-gray-500">
                       <span className="font-bold text-gray-900 block">
                         {entry.entry_date ? new Date(entry.entry_date).toLocaleDateString() : new Date(entry.created_at).toLocaleDateString()}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{entry.source}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{entry.description || "—"}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-green-600">
-                      ₦{Number(entry.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    <td className="px-4 py-3.5 text-sm font-medium text-gray-900">{entry.source}</td>
+                    <td className="px-4 py-3.5 text-sm text-gray-600">{entry.description || "—"}</td>
+                    <td className="px-4 py-3.5 whitespace-nowrap text-sm text-right font-bold text-gray-900 tabular-nums">
+                      {formatCurrency(Number(entry.amount))}
                     </td>
-               
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
-                      <button onClick={() => setIncomeToDelete(entry.id)} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-bold shadow-sm hover:bg-red-100">
-                        🗑️ Delete
+                    <td className="px-4 py-3.5 whitespace-nowrap text-sm text-center">
+                      <button onClick={() => setIncomeToDelete(entry.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100">
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-500">
-                    No other income recorded.
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-500">
+                    <div className="flex flex-col items-center justify-center text-gray-400">
+                      <FileText className="w-8 h-8 mb-2 opacity-50" />
+                      <p>No other income recorded.</p>
+                    </div>
                   </td>
                 </tr>
               )}
             </tbody>
             <tfoot>
               <tr className="bg-gray-50 border-t-2 border-gray-200">
-                <td colSpan={3} className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Total Income</td>
-                <td className="px-6 py-4 text-right font-bold text-green-600 text-lg">₦{totalInc.toLocaleString('en-US', { minimumFractionDigits: 2 })}</td>
-                <td colSpan={2}></td>
+                <td colSpan={3} className="px-4 py-3.5 text-right text-xs font-medium text-gray-500">Total Income</td>
+                <td className="px-4 py-3.5 text-right font-bold text-gray-900 text-lg tabular-nums">{formatCurrency(totalInc)}</td>
+                <td></td>
               </tr>
             </tfoot>
           </table>

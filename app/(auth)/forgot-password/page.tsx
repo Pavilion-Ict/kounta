@@ -42,6 +42,9 @@ export default function ForgotPasswordPage() {
 
   return (
     <div>
+      <div className="flex justify-center mb-2">
+        <img src="/icon.png" alt="Kounta Logo" className="w-12 h-12 object-contain" />
+      </div>
       <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900">
         Reset your password
       </h2>

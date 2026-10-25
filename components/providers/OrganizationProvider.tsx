@@ -1,7 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
 
 type Organization = {
   id: string;
@@ -23,6 +24,9 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [currentOrg, setCurrentOrg] = useState<Organization | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  // Track whether the initial load has ever succeeded so we don't redirect mid-load
+  const loadedRef = useRef(false);
 
   useEffect(() => {
     async function loadOrganizations() {
@@ -33,7 +37,6 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         return;
       }
 
-      // Fetch active memberships for this user
       const { data, error } = await supabase
         .from('memberships')
         .select(`
@@ -54,30 +57,33 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         return;
       }
 
-      const orgs: Organization[] = data.map((m: any) => ({
-        id: m.organizations.id,
-        name: m.organizations.name,
-        slug: m.organizations.slug,
-        role: m.role,
-      }));
+      const orgs: Organization[] = (data || [])
+        .filter((m: any) => m.organizations) // guard against null joins
+        .map((m: any) => ({
+          id: m.organizations.id,
+          name: m.organizations.name,
+          slug: m.organizations.slug,
+          role: m.role,
+        }));
 
       setOrganizations(orgs);
+      loadedRef.current = true;
 
-      // Check localStorage for a previously selected org
+      // Restore previously selected org from localStorage
       const savedOrgId = localStorage.getItem('current_org_id');
       const savedOrg = orgs.find((o) => o.id === savedOrgId);
 
       if (savedOrg) {
         setCurrentOrg(savedOrg);
-        document.cookie = `current_org_id=${savedOrg.id}; path=/; max-age=31536000`;
+        document.cookie = `current_org_id=${savedOrg.id}; path=/; max-age=31536000; SameSite=Lax`;
       } else if (orgs.length > 0) {
         setCurrentOrg(orgs[0]);
         localStorage.setItem('current_org_id', orgs[0].id);
-        document.cookie = `current_org_id=${orgs[0].id}; path=/; max-age=31536000`;
+        document.cookie = `current_org_id=${orgs[0].id}; path=/; max-age=31536000; SameSite=Lax`;
       } else {
-        // User is logged in but has no memberships
-        if (window.location.pathname !== '/onboarding') {
-          window.location.href = '/onboarding';
+        // Only redirect to onboarding AFTER the load confirmed no orgs exist
+        if (typeof window !== 'undefined' && window.location.pathname !== '/onboarding') {
+          router.push('/onboarding');
         }
       }
 
@@ -89,13 +95,17 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
 
   const switchOrganization = (orgId: string) => {
     const org = organizations.find((o) => o.id === orgId);
-    if (org) {
-      setCurrentOrg(org);
-      localStorage.setItem('current_org_id', org.id);
-      document.cookie = `current_org_id=${org.id}; path=/; max-age=31536000`;
-      // Optional: Force a page reload to reset any local state
-      window.location.reload();
-    }
+    if (!org) return;
+
+    // Update state immediately so the UI doesn't flicker
+    setCurrentOrg(org);
+    localStorage.setItem('current_org_id', org.id);
+    // Set cookie synchronously so the next server render picks it up
+    document.cookie = `current_org_id=${org.id}; path=/; max-age=31536000; SameSite=Lax`;
+    // Use router.refresh() instead of window.location.reload() — this re-fetches
+    // server components without unmounting/remounting client components,
+    // so the sidebar never disappears
+    router.refresh();
   };
 
   return (

@@ -33,6 +33,9 @@ export default function OnboardingPage() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl">
         <div>
+          <div className="flex justify-center mb-2">
+            <img src="/icon.png" alt="Kounta Logo" className="w-12 h-12 object-contain" />
+          </div>
           <h2 className="mt-2 text-center text-3xl font-extrabold text-gray-900">
             Welcome to Kounta!
           </h2>

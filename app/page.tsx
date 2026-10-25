@@ -6,27 +6,8 @@ import type { DashboardData } from "@/components/dashboard/DashboardView";
 
 export const dynamic = "force-dynamic";
 
-async function getDashboardData(): Promise<DashboardData | null> {
+async function getDashboardData(user: any, orgId: string): Promise<DashboardData> {
   const supabase = await createClient();
-  const cookieStore = await cookies();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
-
-  let orgId = cookieStore.get("current_org_id")?.value;
-  if (!orgId) {
-    const { data: membership } = await supabase
-      .from("memberships")
-      .select("organization_id")
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .limit(1)
-      .single();
-    if (!membership) return null;
-    orgId = membership.organization_id;
-  }
 
   // Date ranges
   const now = new Date();
@@ -286,11 +267,29 @@ async function getDashboardData(): Promise<DashboardData | null> {
 }
 
 export default async function AdminPage() {
-  const data = await getDashboardData();
+  const supabase = await createClient();
+  const cookieStore = await cookies();
 
-  if (!data) {
-    redirect("/onboarding");
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  let orgId = cookieStore.get("current_org_id")?.value;
+  if (!orgId) {
+    const { data: membership } = await supabase
+      .from("memberships")
+      .select("organization_id")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .limit(1)
+      .single();
+    if (!membership) redirect('/onboarding');
+    orgId = membership.organization_id;
   }
+  if (!orgId) redirect('/onboarding');
+
+  const data = await getDashboardData(user, orgId);
 
   return <DashboardView data={data} />;
 }
