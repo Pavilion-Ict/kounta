@@ -6,54 +6,66 @@ export async function middleware(request: NextRequest) {
     request,
   })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!url || !anonKey) {
+    console.warn('Middleware: Missing Supabase environment variables (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY)')
+    return supabaseResponse
+  }
+
+  try {
+    const supabase = createServerClient(
+      url,
+      anonKey,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+            supabaseResponse = NextResponse.next({
+              request,
+            })
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options)
+            )
+          },
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
+      }
+    )
+
+    // Using getUser() is the recommended method for @supabase/ssr in middleware
+    const { data: { user } } = await supabase.auth.getUser()
+
+    const isAuthRoute = request.nextUrl.pathname.startsWith('/login') || 
+                        request.nextUrl.pathname.startsWith('/signup') || 
+                        request.nextUrl.pathname.startsWith('/forgot-password') ||
+                        request.nextUrl.pathname.startsWith('/auth/callback');
+                        
+    const isPublicApiRoute = request.nextUrl.pathname.startsWith('/api/webhooks');
+
+    if (!user && !isAuthRoute && !isPublicApiRoute) {
+      // Redirect unauthenticated users to the login page
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/login'
+      redirectUrl.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
+      return NextResponse.redirect(redirectUrl)
     }
-  )
 
-  // Refresh session if expired using the fast getSession method
-  const { data: { session } } = await supabase.auth.getSession()
-  const user = session?.user;
+    if (user && isAuthRoute) {
+      // Redirect authenticated users away from auth pages
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/'
+      return NextResponse.redirect(redirectUrl)
+    }
 
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/login') || 
-                      request.nextUrl.pathname.startsWith('/signup') || 
-                      request.nextUrl.pathname.startsWith('/forgot-password') ||
-                      request.nextUrl.pathname.startsWith('/auth/callback');
-                      
-  const isPublicApiRoute = request.nextUrl.pathname.startsWith('/api/webhooks');
-
-  if (!user && !isAuthRoute && !isPublicApiRoute) {
-    // Redirect unauthenticated users to the login page
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    url.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
-    return NextResponse.redirect(url)
+    return supabaseResponse
+  } catch (error) {
+    console.error('Middleware execution error:', error)
+    return supabaseResponse
   }
-
-  if (user && isAuthRoute) {
-    // Redirect authenticated users away from auth pages
-    const url = request.nextUrl.clone()
-    url.pathname = '/'
-    return NextResponse.redirect(url)
-  }
-
-  return supabaseResponse
 }
 
 export const config = {
