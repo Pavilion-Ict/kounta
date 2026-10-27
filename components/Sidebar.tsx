@@ -12,7 +12,8 @@ import {
   ChevronRight,
   Menu,
   LogOut,
-  Plus
+  Plus,
+  Settings
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useOrganization } from "@/components/providers/OrganizationProvider";
@@ -23,6 +24,7 @@ const navItems = [
   { name: "Fixed Cost Product", href: "/fixed-cost-product", icon: Package },
   { name: "Non-Fixed Cost", href: "/non-fixed-cost-product", icon: Box },
   { name: "Additional Income/Exp", href: "/income-expenses", icon: CircleDollarSign },
+  { name: "Settings", href: "/settings", icon: Settings },
 ];
 
 export default function Sidebar() {
@@ -108,9 +110,13 @@ export default function Sidebar() {
                 }}
                 className="flex flex-1 items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-left shadow-sm transition hover:bg-gray-50 min-w-0"
               >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold text-white">
-                  {currentOrg.name.charAt(0).toUpperCase()}
-                </span>
+                {currentOrg.logo_url ? (
+                  <img src={currentOrg.logo_url} alt={currentOrg.name} className="h-7 w-7 shrink-0 rounded-lg object-cover" />
+                ) : (
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-xs font-bold text-white">
+                    {currentOrg.name.charAt(0).toUpperCase()}
+                  </span>
+                )}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-gray-900">{currentOrg.name}</span>
                   <span className="block text-[11px] text-gray-500 capitalize">{currentOrg.role}</span>
@@ -141,9 +147,13 @@ export default function Sidebar() {
                       org.id === currentOrg.id ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-700'
                     }`}
                   >
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gray-200 text-[10px] font-bold text-gray-600">
-                      {org.name.charAt(0).toUpperCase()}
-                    </span>
+                    {org.logo_url ? (
+                      <img src={org.logo_url} alt={org.name} className="h-6 w-6 shrink-0 rounded-md object-cover" />
+                    ) : (
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gray-200 text-[10px] font-bold text-gray-600">
+                        {org.name.charAt(0).toUpperCase()}
+                      </span>
+                    )}
                     <span className="truncate">{org.name}</span>
                   </button>
                 ))}
@@ -154,12 +164,16 @@ export default function Sidebar() {
         {isCollapsed && (
           <div className="flex flex-col items-center gap-2 py-3 border-b border-gray-100">
             {currentOrg && (
-              <div
-                className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-xs font-bold text-white cursor-default"
-                title={currentOrg.name}
-              >
-                {currentOrg.name.charAt(0).toUpperCase()}
-              </div>
+              currentOrg.logo_url ? (
+                <img src={currentOrg.logo_url} alt={currentOrg.name} className="w-8 h-8 rounded-lg object-cover" title={currentOrg.name} />
+              ) : (
+                <div
+                  className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-xs font-bold text-white cursor-default"
+                  title={currentOrg.name}
+                >
+                  {currentOrg.name.charAt(0).toUpperCase()}
+                </div>
+              )
             )}
             <Link
               href="/onboarding"
@@ -213,9 +227,13 @@ export default function Sidebar() {
         <div className="p-4 border-t border-gray-100">
           <div className={`flex items-center gap-3 px-2 py-2 rounded-xl ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
             <div className="flex items-center gap-3 min-w-0">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                <span className="font-bold text-blue-700 text-xs">{userInitials}</span>
-              </div>
+              {currentOrg?.logo_url ? (
+                <img src={currentOrg.logo_url} alt="Org" className="w-8 h-8 rounded-full object-cover shrink-0" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                  <span className="font-bold text-blue-700 text-xs">{userInitials}</span>
+                </div>
+              )}
               <div className={`min-w-0 transition-all duration-300 ${isCollapsed ? 'opacity-0 w-0 hidden' : 'opacity-100'}`}>
                 <p className="text-sm font-semibold text-gray-800 truncate">{currentOrg?.name ?? 'Kounta'}</p>
                 <p className="text-xs text-gray-400 capitalize">{currentOrg?.role ?? ''}</p>

@@ -26,7 +26,7 @@ export default function FixedCostProductDashboard({
 }: any) {
   const [catalogue, setCatalogue] = useState<any>(initialCatalogue);
   const [stockLogs, setStockLogs] = useState<any[]>(initialStockLogs);
-  const { currentOrg } = useOrganization();
+  const { currentOrg, isOwner } = useOrganization();
   
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState(getLocalDate());
@@ -514,62 +514,64 @@ export default function FixedCostProductDashboard({
             </div>
           </form>
 
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
-            <h3 className="text-md font-semibold text-gray-800 mb-3 border-b border-gray-100 pb-2 flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center">
-                <Settings className="w-3.5 h-3.5 text-amber-600" />
-              </span>
-              Update catalogue
-            </h3>
-            {!catUnlocked ? (
-              <form onSubmit={unlockCatalogue} className="flex flex-col gap-3">
-                <div>
-                  <label className={labelClass}>Enter Admin PIN</label>
-                  <input type="password" placeholder="••••" required className={`${inputClass} text-center font-mono tracking-[0.5em]`} value={catPin} onChange={(e) => { setCatPin(e.target.value); setCatError(""); }} />
-                  {catError && <p className="text-red-500 text-xs mt-1">{catError}</p>}
-                </div>
-                <button type="submit" className="w-full py-2 bg-gray-100 text-gray-800 font-bold text-sm rounded-lg hover:bg-gray-200">Unlock</button>
-              </form>
-            ) : (
-              <>
-                <form onSubmit={handleCatalogueSubmit} className="flex flex-col gap-3">
+          {isOwner && (
+            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+              <h3 className="text-md font-semibold text-gray-800 mb-3 border-b border-gray-100 pb-2 flex items-center gap-2">
+                <span className="w-6 h-6 rounded-lg bg-amber-50 flex items-center justify-center">
+                  <Settings className="w-3.5 h-3.5 text-amber-600" />
+                </span>
+                Update catalogue
+              </h3>
+              {!catUnlocked ? (
+                <form onSubmit={unlockCatalogue} className="flex flex-col gap-3">
                   <div>
-                    <label className={labelClass}>Service Name</label>
-                    <input type="text" placeholder="e.g. Printing" required className={inputClass} value={catName} onChange={(e) => setCatName(e.target.value)} />
+                    <label className={labelClass}>Enter Admin PIN</label>
+                    <input type="password" placeholder="••••" required className={`${inputClass} text-center font-mono tracking-[0.5em]`} value={catPin} onChange={(e) => { setCatPin(e.target.value); setCatError(""); }} />
+                    {catError && <p className="text-red-500 text-xs mt-1">{catError}</p>}
                   </div>
-                  <div>
-                    <label className={labelClass}>Unit COP (₦)</label>
-                    <input type="number" step="0.01" min="0" required className={inputClass} value={catCop} onChange={(e) => setCatCop(e.target.value)} />
-                  </div>
-                  <button type="submit" disabled={catLoading} className="w-full py-2 mt-1 bg-brand-yellow text-yellow-900 font-bold text-sm rounded-lg hover:brightness-95">
-                    {catLoading ? "Saving..." : "Add / Update"}
-                  </button>
+                  <button type="submit" className="w-full py-2 bg-gray-100 text-gray-800 font-bold text-sm rounded-lg hover:bg-gray-200">Unlock</button>
                 </form>
-                <div className="mt-4 pt-4 border-t border-gray-100 max-h-48 overflow-y-auto">
-                  <table className="w-full text-left text-xs">
-                    <thead className="sticky top-0 bg-white">
-                      <tr className="text-gray-500 uppercase">
-                        <th className="pb-2">Service</th>
-                        <th className="pb-2 text-right">COP</th>
-                        <th className="pb-2 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {Object.entries(catalogue).map(([name, data]: any) => (
-                        <tr key={name} className="hover:bg-gray-50">
-                          <td className="py-2 text-gray-900">{name}</td>
-                          <td className="py-2 text-right text-gray-900 font-bold">₦{data.cop}</td>
-                          <td className="py-2 text-right">
-                            <button onClick={() => handleCatalogueDelete(name)} className="text-red-500 hover:text-red-700">Delete</button>
-                          </td>
+              ) : (
+                <>
+                  <form onSubmit={handleCatalogueSubmit} className="flex flex-col gap-3">
+                    <div>
+                      <label className={labelClass}>Service Name</label>
+                      <input type="text" placeholder="e.g. Printing" required className={inputClass} value={catName} onChange={(e) => setCatName(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Unit COP (₦)</label>
+                      <input type="number" step="0.01" min="0" required className={inputClass} value={catCop} onChange={(e) => setCatCop(e.target.value)} />
+                    </div>
+                    <button type="submit" disabled={catLoading} className="w-full py-2 mt-1 bg-brand-yellow text-yellow-900 font-bold text-sm rounded-lg hover:brightness-95">
+                      {catLoading ? "Saving..." : "Add / Update"}
+                    </button>
+                  </form>
+                  <div className="mt-4 pt-4 border-t border-gray-100 max-h-48 overflow-y-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="sticky top-0 bg-white">
+                        <tr className="text-gray-500 uppercase">
+                          <th className="pb-2">Service</th>
+                          <th className="pb-2 text-right">COP</th>
+                          <th className="pb-2 text-right">Action</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-          </div>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {Object.entries(catalogue).map(([name, data]: any) => (
+                          <tr key={name} className="hover:bg-gray-50">
+                            <td className="py-2 text-gray-900">{name}</td>
+                            <td className="py-2 text-right text-gray-900 font-bold">₦{data.cop}</td>
+                            <td className="py-2 text-right">
+                              <button onClick={() => handleCatalogueDelete(name)} className="text-red-500 hover:text-red-700">Delete</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -599,7 +601,7 @@ export default function FixedCostProductDashboard({
           {selectedEntries.size > 0 && (
             <button onClick={() => {
               const rowsToPrint = filteredEntries.filter((e: any) => selectedEntries.has(e.id));
-              generateReceipt(rowsToPrint, title, true); 
+              generateReceipt(rowsToPrint, title, true, { name: currentOrg?.name, logoUrl: currentOrg?.logo_url }); 
             }} className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold shadow-sm hover:bg-primary-hover flex items-center gap-1.5">
               <Receipt className="w-3.5 h-3.5" /> Generate Receipt ({selectedEntries.size})
             </button>
@@ -668,12 +670,14 @@ export default function FixedCostProductDashboard({
                       </td>
                       <td className="px-4 py-3.5 whitespace-nowrap text-sm">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => generateReceipt(entry, title)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors" title="Generate receipt">
+                          <button onClick={() => generateReceipt(entry, title, false, { name: currentOrg?.name, logoUrl: currentOrg?.logo_url })} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors" title="Generate receipt">
                             <Receipt className="w-4 h-4" />
                           </button>
-                          <button onClick={() => setEntryToDelete(entry.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Delete entry">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {isOwner && (
+                            <button onClick={() => setEntryToDelete(entry.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Delete entry">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

@@ -27,7 +27,8 @@ export default function LoginPage() {
       setError(error.message);
       setIsLoading(false);
     } else {
-      router.push('/');
+      const nextParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('next') : null;
+      router.push(nextParam || '/');
       router.refresh();
     }
   };

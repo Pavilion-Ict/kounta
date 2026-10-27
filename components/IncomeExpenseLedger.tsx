@@ -7,6 +7,7 @@ import { deleteExpense, deleteIncome } from "@/app/actions/expenses";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { formatCurrency } from "@/lib/format";
 import { Trash2, FileText, ArrowDownCircle, ArrowUpCircle, Calendar, X } from "lucide-react";
+import { useOrganization } from "@/components/providers/OrganizationProvider";
 
 export default function IncomeExpenseLedger({ 
   initialExpenses = [],
@@ -15,6 +16,7 @@ export default function IncomeExpenseLedger({
   initialExpenses?: any[];
   initialIncome?: any[];
 }) {
+  const { isOwner } = useOrganization();
   const [dateFilter, setDateFilter] = useState("");
   
   const [expenseToDelete, setExpenseToDelete] = useState<string | null>(null);
@@ -158,9 +160,11 @@ export default function IncomeExpenseLedger({
                       {formatCurrency(Number(entry.amount))}
                     </td>
                     <td className="px-4 py-3.5 whitespace-nowrap text-sm text-center">
-                      <button onClick={() => setExpenseToDelete(entry.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {isOwner && (
+                        <button onClick={() => setExpenseToDelete(entry.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -217,9 +221,11 @@ export default function IncomeExpenseLedger({
                       {formatCurrency(Number(entry.amount))}
                     </td>
                     <td className="px-4 py-3.5 whitespace-nowrap text-sm text-center">
-                      <button onClick={() => setIncomeToDelete(entry.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {isOwner && (
+                        <button onClick={() => setIncomeToDelete(entry.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

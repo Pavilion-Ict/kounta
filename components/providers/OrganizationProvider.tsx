@@ -9,6 +9,7 @@ type Organization = {
   name: string;
   slug: string;
   role: string;
+  logo_url: string | null;
 };
 
 type OrganizationContextType = {
@@ -16,6 +17,8 @@ type OrganizationContextType = {
   organizations: Organization[];
   switchOrganization: (orgId: string) => void;
   isLoading: boolean;
+  isOwner: boolean;
+  reloadOrganizations: () => Promise<void>;
 };
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
@@ -28,16 +31,32 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
   // Track whether the initial load has ever succeeded so we don't redirect mid-load
   const loadedRef = useRef(false);
 
-  useEffect(() => {
-    async function loadOrganizations() {
-      const supabase = createClient();
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
-        setIsLoading(false);
-        return;
-      }
+  const loadOrganizations = async () => {
+    const supabase = createClient();
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+      setIsLoading(false);
+      return;
+    }
 
-      const { data, error } = await supabase
+    let res: any = await supabase
+      .from('memberships')
+      .select(`
+        role,
+        organization_id,
+        organizations:organization_id (
+          id,
+          name,
+          slug,
+          logo_url
+        )
+      `)
+      .eq('user_id', userData.user.id)
+      .eq('status', 'active');
+
+    // If query failed (e.g. logo_url column has not been added via migrate_roles.sql yet), fallback without logo_url
+    if (res.error) {
+      res = await supabase
         .from('memberships')
         .select(`
           role,
@@ -50,46 +69,51 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
         `)
         .eq('user_id', userData.user.id)
         .eq('status', 'active');
-
-      if (error) {
-        console.error('Error fetching organizations:', error);
-        setIsLoading(false);
-        return;
-      }
-
-      const orgs: Organization[] = (data || [])
-        .filter((m: any) => m.organizations) // guard against null joins
-        .map((m: any) => ({
-          id: m.organizations.id,
-          name: m.organizations.name,
-          slug: m.organizations.slug,
-          role: m.role,
-        }));
-
-      setOrganizations(orgs);
-      loadedRef.current = true;
-
-      // Restore previously selected org from localStorage
-      const savedOrgId = localStorage.getItem('current_org_id');
-      const savedOrg = orgs.find((o) => o.id === savedOrgId);
-
-      if (savedOrg) {
-        setCurrentOrg(savedOrg);
-        document.cookie = `current_org_id=${savedOrg.id}; path=/; max-age=31536000; SameSite=Lax`;
-      } else if (orgs.length > 0) {
-        setCurrentOrg(orgs[0]);
-        localStorage.setItem('current_org_id', orgs[0].id);
-        document.cookie = `current_org_id=${orgs[0].id}; path=/; max-age=31536000; SameSite=Lax`;
-      } else {
-        // Only redirect to onboarding AFTER the load confirmed no orgs exist
-        if (typeof window !== 'undefined' && window.location.pathname !== '/onboarding') {
-          router.push('/onboarding');
-        }
-      }
-
-      setIsLoading(false);
     }
 
+    const { data, error } = res;
+
+    if (error) {
+      console.error('Error fetching organizations:', error.message || JSON.stringify(error));
+      setIsLoading(false);
+      return;
+    }
+
+    const orgs: Organization[] = (data || [])
+      .filter((m: any) => m.organizations) // guard against null joins
+      .map((m: any) => ({
+        id: m.organizations.id,
+        name: m.organizations.name,
+        slug: m.organizations.slug,
+        role: m.role,
+        logo_url: m.organizations.logo_url || null,
+      }));
+
+    setOrganizations(orgs);
+    loadedRef.current = true;
+
+    // Restore previously selected org from localStorage or state
+    const savedOrgId = currentOrg?.id || localStorage.getItem('current_org_id');
+    const savedOrg = orgs.find((o) => o.id === savedOrgId);
+
+    if (savedOrg) {
+      setCurrentOrg(savedOrg);
+      document.cookie = `current_org_id=${savedOrg.id}; path=/; max-age=31536000; SameSite=Lax`;
+    } else if (orgs.length > 0) {
+      setCurrentOrg(orgs[0]);
+      localStorage.setItem('current_org_id', orgs[0].id);
+      document.cookie = `current_org_id=${orgs[0].id}; path=/; max-age=31536000; SameSite=Lax`;
+    } else {
+      // Only redirect to onboarding AFTER the load confirmed no orgs exist
+      if (typeof window !== 'undefined' && window.location.pathname !== '/onboarding') {
+        router.push('/onboarding');
+      }
+    }
+
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
     loadOrganizations();
   }, []);
 
@@ -108,8 +132,19 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
     router.refresh();
   };
 
+  const isOwner = currentOrg?.role === 'owner';
+
   return (
-    <OrganizationContext.Provider value={{ currentOrg, organizations, switchOrganization, isLoading }}>
+    <OrganizationContext.Provider
+      value={{
+        currentOrg,
+        organizations,
+        switchOrganization,
+        isLoading,
+        isOwner,
+        reloadOrganizations: loadOrganizations,
+      }}
+    >
       {children}
     </OrganizationContext.Provider>
   );

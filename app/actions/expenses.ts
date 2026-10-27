@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { requireOwner } from "@/utils/permissions";
 
 async function getOrgId(): Promise<string> {
   const cookieStore = await cookies();
@@ -34,8 +35,9 @@ export async function addExpense(data: any, path: string) {
 }
 
 export async function deleteExpense(id: string, path: string) {
-  const supabase = await createClient();
   const orgId = await getOrgId();
+  await requireOwner(orgId);
+  const supabase = await createClient();
 
   const { error } = await supabase
     .from('company_expenses')
@@ -70,8 +72,9 @@ export async function addIncome(data: any, path: string) {
 }
 
 export async function deleteIncome(id: string, path: string) {
-  const supabase = await createClient();
   const orgId = await getOrgId();
+  await requireOwner(orgId);
+  const supabase = await createClient();
 
   const { error } = await supabase
     .from('company_income')

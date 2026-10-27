@@ -42,6 +42,7 @@ export async function middleware(request: NextRequest) {
     // Redirect unauthenticated users to the login page
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    url.searchParams.set('next', request.nextUrl.pathname + request.nextUrl.search)
     return NextResponse.redirect(url)
   }
 

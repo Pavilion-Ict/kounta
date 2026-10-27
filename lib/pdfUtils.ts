@@ -36,7 +36,12 @@ const PDF_BASE_STYLES = `
   @media print { body { padding: 10px; } }
 `;
 
-export function generateReceipt(rowsOrRow: any, title: string, isMulti = false) {
+export function generateReceipt(
+  rowsOrRow: any,
+  title: string,
+  isMulti = false,
+  orgInfo?: { name?: string; logoUrl?: string | null }
+) {
   const rows = Array.isArray(rowsOrRow) ? rowsOrRow : [rowsOrRow];
   if (rows.length === 0) return;
 
@@ -61,6 +66,9 @@ export function generateReceipt(rowsOrRow: any, title: string, isMulti = false) 
     `;
   }).join('');
 
+  const companyName = orgInfo?.name || BUSINESS_NAME;
+  const logoSrc = orgInfo?.logoUrl || `${window.location.origin}/icon.png`;
+
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Receipt ${receiptNo}</title>
   <style>
     ${PDF_BASE_STYLES}
@@ -77,9 +85,9 @@ export function generateReceipt(rowsOrRow: any, title: string, isMulti = false) 
   </style></head><body>
   <div class="receipt-box">
     <div style="display: flex; align-items: center; gap: 12px; border-bottom: 3px solid #111; padding-bottom: 12px; margin-bottom: 14px;">
-      <img src="${window.location.origin}/icon.png" alt="Logo" style="width: 40px; height: 40px; object-fit: contain;" />
+      <img src="${logoSrc}" alt="Logo" style="width: 44px; height: 44px; object-fit: contain; border-radius: 4px;" />
       <div>
-        <h1 style="text-align: left; font-size: 18px; margin: 0;">${BUSINESS_NAME}</h1>
+        <h1 style="text-align: left; font-size: 18px; margin: 0;">${companyName}</h1>
         <div class="biz-sub" style="text-align: left; margin: 0;">${title} Services</div>
       </div>
     </div>
@@ -100,7 +108,7 @@ export function generateReceipt(rowsOrRow: any, title: string, isMulti = false) 
     <div class="row"><span class="label">Delivery</span><span class="value" style="text-transform: capitalize;">${rows[0].delivery_method}</span></div>
     ${!isMulti && rows[0].note ? `<div class="row"><span class="label">Note</span><span class="value">${rows[0].note}</span></div>` : ""}
     ${grandTotal ? `<div class="stamp"><span>RECEIVED</span></div>` : ""}
-    <div class="footer">Thank you for your business!<br/>${BUSINESS_NAME} · ${fmtDate(new Date().toISOString())}</div>
+    <div class="footer">Thank you for your business!<br/>${companyName} · ${fmtDate(new Date().toISOString())}</div>
   </div>
   <script>window.onload=()=>window.print()</script>
   </body></html>`;

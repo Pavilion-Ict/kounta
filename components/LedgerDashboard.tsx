@@ -63,7 +63,7 @@ export default function LedgerDashboard({
   const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
   const [copEntryToDelete, setCopEntryToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const { currentOrg } = useOrganization();
+  const { currentOrg, isOwner } = useOrganization();
 
   const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
 
@@ -412,8 +412,10 @@ export default function LedgerDashboard({
                       </td>
                       <td className="px-4 py-3.5 whitespace-nowrap text-sm">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => generateReceipt(entry, title)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors" title="Generate receipt"><Receipt className="w-4 h-4" /></button>
-                          <button onClick={() => setEntryToDelete(entry.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => generateReceipt(entry, title, false, { name: currentOrg?.name, logoUrl: currentOrg?.logo_url })} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors" title="Generate receipt"><Receipt className="w-4 h-4" /></button>
+                          {isOwner && (
+                            <button onClick={() => setEntryToDelete(entry.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -469,15 +471,17 @@ export default function LedgerDashboard({
                       {entry.users?.username || 'Unknown'}
                     </td>
                     <td className="px-4 py-3.5 whitespace-nowrap text-sm text-right">
-                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={() => setCopEntryToDelete(entry.id)} 
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      {isOwner && (
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => setCopEntryToDelete(entry.id)} 
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))

@@ -1,6 +1,7 @@
 "use server";
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { requireOwner } from "@/utils/permissions";
 
 // ── SALES LEDGER ACTIONS ──────────────────────────────────────────────────────
 export async function addLedgerEntry(tableName: string, data: any, orgId: string) {
@@ -33,6 +34,7 @@ export async function addLedgerEntry(tableName: string, data: any, orgId: string
 }
 
 export async function updateLedgerEntry(tableName: string, id: string, data: any, orgId: string) {
+  await requireOwner(orgId);
   const supabase = await createClient();
 
   const mappedData = {
@@ -63,6 +65,7 @@ export async function updateLedgerEntry(tableName: string, id: string, data: any
 }
 
 export async function deleteLedgerEntry(tableName: string, id: string, orgId: string) {
+  await requireOwner(orgId);
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -110,6 +113,7 @@ export async function addCopEntry(tableName: string, data: {
 }
 
 export async function deleteCopEntry(tableName: string, id: string, orgId: string) {
+  await requireOwner(orgId);
   const supabase = await createClient();
   const copTableName = tableName.replace('_ledger', '_cop');
 

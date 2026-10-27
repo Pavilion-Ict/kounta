@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
+import { requireOwner } from "@/utils/permissions";
 
 type CatalogueItem = {
   id: string;
@@ -42,6 +43,7 @@ export async function getCatalogue(orgId: string) {
 }
 
 export async function updateCatalogue(services: { service_name: string; cop_rate: number }[], orgId: string) {
+  await requireOwner(orgId);
   const supabase = await createClient();
   const payload = services.map(s => ({ ...s, organization_id: orgId }));
   const { error } = await supabase
@@ -56,6 +58,7 @@ export async function updateCatalogue(services: { service_name: string; cop_rate
 }
 
 export async function deleteCatalogueItem(serviceName: string, orgId: string) {
+  await requireOwner(orgId);
   const supabase = await createClient();
   const { error } = await supabase
     .from("publishing_catalogue")
