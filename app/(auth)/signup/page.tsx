@@ -13,13 +13,13 @@ export default function SignupPage() {
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const supabase = createClient();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
+    const supabase = createClient();
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -132,6 +132,7 @@ export default function SignupPage() {
         <div className="mt-6">
           <button
             onClick={async () => {
+              const supabase = createClient();
               await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
