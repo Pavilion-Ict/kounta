@@ -10,7 +10,6 @@ export default function SignupPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -20,36 +19,40 @@ export default function SignupPage() {
     setError(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
         },
-        emailRedirectTo: `${location.origin}/auth/callback`,
       },
     });
 
     if (error) {
       setError(error.message);
       setIsLoading(false);
-    } else {
-      setSuccess(true);
-      setIsLoading(false);
+      return;
     }
-  };
 
-  if (success) {
-    return (
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Check your email</h2>
-        <p className="text-gray-600">
-          We've sent you a confirmation link. Please click the link to activate your account.
-        </p>
-      </div>
-    );
-  }
+    // If an active session wasn't auto-returned, sign in directly with credentials
+    if (!data.session) {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError) {
+        setError(signInError.message);
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    const nextParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('next') : null;
+    router.push(nextParam || '/');
+    router.refresh();
+  };
 
   return (
     <div>
