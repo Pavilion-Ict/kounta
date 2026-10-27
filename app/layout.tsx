@@ -29,12 +29,23 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || '';
+
   return (
     <html
       lang="en"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.__ENV = { SUPABASE_URL: ${JSON.stringify(supabaseUrl)}, SUPABASE_ANON_KEY: ${JSON.stringify(supabaseAnonKey)}, APP_URL: ${JSON.stringify(appUrl)} };`,
+          }}
+        />
+      </head>
       <body className="min-h-full flex">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <OrganizationProvider>

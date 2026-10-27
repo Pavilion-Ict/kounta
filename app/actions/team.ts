@@ -8,8 +8,9 @@ import { requireOwner } from "@/utils/permissions";
 import { sendInviteEmail } from "@/utils/email";
 
 function getAdminClient() {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
   return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseUrl,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 }
@@ -90,7 +91,7 @@ export async function inviteTeamMember(email: string, role: "owner" | "staff") {
 
   const orgName = org?.name || "your organization";
   const inviterName = user.user_metadata?.full_name || user.email || "A team admin";
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const inviteUrl = `${appUrl}/auth/accept-invite?token=${token}`;
 
   try {

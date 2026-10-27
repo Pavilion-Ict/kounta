@@ -7,8 +7,9 @@ import { revalidatePath } from "next/cache";
 import { requireOwner } from "@/utils/permissions";
 
 function getAdminClient() {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
   return createAdminClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseUrl,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 }

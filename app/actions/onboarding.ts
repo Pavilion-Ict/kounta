@@ -12,10 +12,13 @@ export async function createOrganization(formData: FormData) {
   const companyName = formData.get('companyName') as string;
   if (!companyName) return { error: "Company name is required." };
 
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder';
+
   const cookieStore = await cookies();
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         getAll() { return cookieStore.getAll() },
@@ -28,7 +31,7 @@ export async function createOrganization(formData: FormData) {
   // We need to use the Service Role to bypass RLS for initial creation. 
   // We MUST NOT pass cookies here, or Supabase will downgrade the permissions to the user's JWT.
   const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseUrl,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
